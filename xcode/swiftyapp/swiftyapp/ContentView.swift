@@ -20,6 +20,8 @@ struct ContentView: View {
     @State private var bootstrapResult = ""
     @State private var peers = [String]()
     @State private var refs = [String]()
+    @State private var peerToFind = ""
+    @State private var foundAddresses = [String]()
     @State private var node: IpfsNode?
     @State private var addName = "hello.txt"
     @State private var addText = "Hello from Swift + Rust IPFS"
@@ -356,6 +358,31 @@ struct ContentView: View {
                                     .font(.footnote.monospaced())
                                     .foregroundStyle(primaryText.opacity(0.8))
                                     .textSelection(.enabled)
+                            }
+
+                            HStack {
+                                TextField("Peer ID to find", text: $peerToFind)
+                                    .textFieldStyle(.roundedBorder)
+                                Button("Find peer") {
+                                    guard let node else { return }
+                                    let peer = peerToFind
+                                    Task { foundAddresses = await Task.detached { node.findPeer(peerId: peer) }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || peerToFind.isEmpty)
+                            }
+
+                            if !foundAddresses.isEmpty {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Found addresses")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(primaryText.opacity(0.68))
+                                    ForEach(foundAddresses, id: \.self) { address in
+                                        Text(address)
+                                            .font(.caption.monospaced())
+                                            .foregroundStyle(primaryText.opacity(0.72))
+                                    }
+                                }
                             }
 
                             HStack {

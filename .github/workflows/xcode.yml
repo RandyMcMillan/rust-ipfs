@@ -1,0 +1,83 @@
+name: Xcode
+
+on:
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: Build configuration
+        required: true
+        default: Debug
+        type: choice
+        options:
+          - Debug
+          - Release
+      destination:
+        description: Build destination
+        required: true
+        default: ios-simulator
+        type: choice
+        options:
+          - ios-simulator
+          - macos-designed-for-ipad
+      clean:
+        description: Clean Rust and Xcode build artifacts before building
+        required: false
+        default: false
+        type: boolean
+  push:
+  pull_request:
+
+jobs:
+  build-xcode:
+    name: Build Xcode app
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,aarch64-apple-darwin
+
+      - name: Show tool versions
+        run: |
+          xcodebuild -version
+          rustc --version
+          cargo --version
+
+      - name: Clean build artifacts
+        if: ${{ inputs.clean == true }}
+        working-directory: xcode
+        run: make clean
+
+      - name: Build Rust library and XCFramework
+        working-directory: xcode
+        run: ./build.sh
+
+      - name: Resolve Swift package dependencies
+        working-directory: xcode
+        run: xcodebuild -resolvePackageDependencies -project swiftyapp/swiftyapp.xcodeproj -scheme swiftyapp
+
+      - name: Build with Make
+        if: ${{ inputs.destination == '' || inputs.destination == 'ios-simulator' }}
+        working-directory: xcode
+        run: make app CONFIGURATION=${{ inputs.configuration || 'Debug' }}
+
+      - name: Build for My Mac (Designed for iPad/iPhone)
+        if: ${{ inputs.destination == 'macos-designed-for-ipad' }}
+        working-directory: xcode
+        run: |
+          xcodebuild \
+            -project swiftyapp/swiftyapp.xcodeproj \
+            -scheme swiftyapp \
+            -configuration ${{ inputs.configuration || 'Debug' }} \
+            -destination 'platform=macOS,arch=arm64,variant=Designed for [iPad,iPhone]' \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=YES \
+            build

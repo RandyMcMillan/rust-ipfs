@@ -502,6 +502,8 @@ public protocol IpfsNodeProtocol : AnyObject {
     
     func addBytes(name: String, data: Data) throws  -> String
     
+    func addExternalAddress(address: String)  -> String
+    
     func addrs()  -> [String]
     
     func bootstraps()  -> [String]
@@ -513,6 +515,8 @@ public protocol IpfsNodeProtocol : AnyObject {
     func defaultBootstrap()  -> String
     
     func disconnect(peerId: String)  -> String
+    
+    func externalAddresses()  -> [String]
     
     func identityJson()  -> String
     
@@ -535,6 +539,8 @@ public protocol IpfsNodeProtocol : AnyObject {
     func peers()  -> [String]
     
     func refsLocal()  -> [String]
+    
+    func removeExternalAddress(address: String)  -> String
     
 }
 
@@ -604,6 +610,14 @@ open func addBytes(name: String, data: Data)throws  -> String {
 })
 }
     
+open func addExternalAddress(address: String) -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_add_external_address(self.uniffiClonePointer(),
+        FfiConverterString.lower(address),$0
+    )
+})
+}
+    
 open func addrs() -> [String] {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
     uniffi_rustylib_fn_method_ipfsnode_addrs(self.uniffiClonePointer(),$0
@@ -645,6 +659,13 @@ open func disconnect(peerId: String) -> String {
     return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_rustylib_fn_method_ipfsnode_disconnect(self.uniffiClonePointer(),
         FfiConverterString.lower(peerId),$0
+    )
+})
+}
+    
+open func externalAddresses() -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_external_addresses(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -731,6 +752,14 @@ open func peers() -> [String] {
 open func refsLocal() -> [String] {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
     uniffi_rustylib_fn_method_ipfsnode_refs_local(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func removeExternalAddress(address: String) -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_remove_external_address(self.uniffiClonePointer(),
+        FfiConverterString.lower(address),$0
     )
 })
 }
@@ -916,6 +945,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_rustylib_checksum_method_ipfsnode_add_bytes() != 13303) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_rustylib_checksum_method_ipfsnode_add_external_address() != 48198) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_rustylib_checksum_method_ipfsnode_addrs() != 32057) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -932,6 +964,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_method_ipfsnode_disconnect() != 4950) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_external_addresses() != 19293) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_method_ipfsnode_identity_json() != 50928) {
@@ -965,6 +1000,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_method_ipfsnode_refs_local() != 39765) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_remove_external_address() != 46369) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_constructor_ipfsnode_new() != 29091) {

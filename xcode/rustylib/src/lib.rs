@@ -201,6 +201,44 @@ impl IpfsNode {
         })
     }
 
+    pub fn external_addresses(&self) -> Vec<String> {
+        self.rt.block_on(async {
+            self.inner
+                .external_addresses()
+                .await
+                .map(|addresses| addresses.into_iter().map(|address| address.to_string()).collect())
+                .unwrap_or_default()
+        })
+    }
+
+    pub fn add_external_address(&self, address: String) -> String {
+        use std::str::FromStr;
+        let addr = match rust_ipfs::Multiaddr::from_str(&address) {
+            Ok(addr) => addr,
+            Err(err) => return format!("invalid multiaddr: {err}"),
+        };
+        self.rt.block_on(async {
+            match self.inner.add_external_address(addr).await {
+                Ok(()) => "ok".to_string(),
+                Err(err) => format!("failed: {err}"),
+            }
+        })
+    }
+
+    pub fn remove_external_address(&self, address: String) -> String {
+        use std::str::FromStr;
+        let addr = match rust_ipfs::Multiaddr::from_str(&address) {
+            Ok(addr) => addr,
+            Err(err) => return format!("invalid multiaddr: {err}"),
+        };
+        self.rt.block_on(async {
+            match self.inner.remove_external_address(addr).await {
+                Ok(()) => "ok".to_string(),
+                Err(err) => format!("failed: {err}"),
+            }
+        })
+    }
+
     pub fn refs_local(&self) -> Vec<String> {
         self.rt.block_on(async { self.inner.refs_local().await.into_iter().map(|cid| cid.to_string()).collect() })
     }

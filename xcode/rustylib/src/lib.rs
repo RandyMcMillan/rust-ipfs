@@ -177,6 +177,34 @@ impl IpfsNode {
         })
     }
 
+    pub fn peers(&self) -> Vec<String> {
+        self.rt.block_on(async {
+            self.inner
+                .connected()
+                .await
+                .map(|peers| peers.into_iter().map(|peer| peer.to_string()).collect())
+                .unwrap_or_default()
+        })
+    }
+
+    pub fn disconnect(&self, peer_id: String) -> String {
+        use std::str::FromStr;
+        let peer = match rust_ipfs::PeerId::from_str(&peer_id) {
+            Ok(peer) => peer,
+            Err(err) => return format!("invalid peer id: {err}"),
+        };
+        self.rt.block_on(async {
+            match self.inner.disconnect(peer).await {
+                Ok(()) => "disconnected".to_string(),
+                Err(err) => format!("disconnect failed: {err}"),
+            }
+        })
+    }
+
+    pub fn refs_local(&self) -> Vec<String> {
+        self.rt.block_on(async { self.inner.refs_local().await.into_iter().map(|cid| cid.to_string()).collect() })
+    }
+
     pub fn mfs_root(&self) -> String {
         self.rt.block_on(async {
             match self.inner.mfs().root().await {
@@ -248,4 +276,15 @@ impl IpfsNode {
 pub fn start_ipfs_node() -> String {
     let node = IpfsNode::new();
     node.peer_id()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn node_starts() {
+        let node = IpfsNode::new();
+        assert!(!node.peer_id().is_empty());
+    }
 }

@@ -512,6 +512,8 @@ public protocol IpfsNodeProtocol : AnyObject {
     
     func defaultBootstrap()  -> String
     
+    func disconnect(peerId: String)  -> String
+    
     func identityJson()  -> String
     
     func listeningAddresses()  -> [String]
@@ -529,6 +531,10 @@ public protocol IpfsNodeProtocol : AnyObject {
     func mfsWrite(path: String, data: Data, parents: Bool)  -> String
     
     func peerId()  -> String
+    
+    func peers()  -> [String]
+    
+    func refsLocal()  -> [String]
     
 }
 
@@ -635,6 +641,14 @@ open func defaultBootstrap() -> String {
 })
 }
     
+open func disconnect(peerId: String) -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_disconnect(self.uniffiClonePointer(),
+        FfiConverterString.lower(peerId),$0
+    )
+})
+}
+    
 open func identityJson() -> String {
     return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_rustylib_fn_method_ipfsnode_identity_json(self.uniffiClonePointer(),$0
@@ -703,6 +717,20 @@ open func mfsWrite(path: String, data: Data, parents: Bool) -> String {
 open func peerId() -> String {
     return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_rustylib_fn_method_ipfsnode_peer_id(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func peers() -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_peers(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func refsLocal() -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_refs_local(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -903,6 +931,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_rustylib_checksum_method_ipfsnode_default_bootstrap() != 60406) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_rustylib_checksum_method_ipfsnode_disconnect() != 4950) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_rustylib_checksum_method_ipfsnode_identity_json() != 50928) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -928,6 +959,12 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_method_ipfsnode_peer_id() != 37429) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_peers() != 7613) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_refs_local() != 39765) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_constructor_ipfsnode_new() != 29091) {

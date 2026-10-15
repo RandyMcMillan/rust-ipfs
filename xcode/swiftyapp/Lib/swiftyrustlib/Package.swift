@@ -19,7 +19,10 @@ let package = Package(
             dependencies: [
                 .byName(name: "RustyCore")
             ],
-            path: "Sources/"
+            path: "Sources/",
+            linkerSettings: [
+                .linkedFramework("SystemConfiguration")
+            ]
         ),
         .binaryTarget(
             name: "RustyCore",

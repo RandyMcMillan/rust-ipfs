@@ -11,6 +11,8 @@ struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var firstValue = 10
     @State private var secondValue = 32
+    @State private var peerId = ""
+    @State private var isStartingNode = false
 
     private var sum: Int {
         Int(rustAdd(a: UInt32(firstValue), b: UInt32(secondValue)))
@@ -165,6 +167,34 @@ struct ContentView: View {
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(PrimaryButtonStyle())
+                        }
+                    }
+
+                    glassCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Label("Real IPFS node", systemImage: "network")
+                                .font(.headline)
+                                .foregroundStyle(accentText)
+
+                            Button {
+                                isStartingNode = true
+                                Task {
+                                    defer { isStartingNode = false }
+                                    peerId = await Task.detached { startIpfsNode() }.value
+                                }
+                            } label: {
+                                Label(isStartingNode ? "Starting..." : "Start IPFS node", systemImage: "play.fill")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(PrimaryButtonStyle())
+                            .disabled(isStartingNode)
+
+                            if !peerId.isEmpty {
+                                Text(peerId)
+                                    .font(.footnote.monospaced())
+                                    .foregroundStyle(primaryText.opacity(0.8))
+                                    .textSelection(.enabled)
+                            }
                         }
                     }
 

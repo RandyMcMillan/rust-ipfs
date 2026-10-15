@@ -466,6 +466,12 @@ public func rustHello() -> String {
     )
 })
 }
+public func startIpfsNode() -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_func_start_ipfs_node($0
+    )
+})
+}
 
 private enum InitializationResult {
     case ok
@@ -486,6 +492,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_func_rust_hello() != 11814) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_func_start_ipfs_node() != 19357) {
         return InitializationResult.apiChecksumMismatch
     }
 

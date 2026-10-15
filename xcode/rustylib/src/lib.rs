@@ -239,6 +239,21 @@ impl IpfsNode {
         })
     }
 
+    pub fn find_peer(&self, peer_id: String) -> Vec<String> {
+        use std::str::FromStr;
+        let peer = match rust_ipfs::PeerId::from_str(&peer_id) {
+            Ok(peer) => peer,
+            Err(_) => return Vec::new(),
+        };
+        self.rt.block_on(async {
+            self.inner
+                .find_peer(peer)
+                .await
+                .map(|addresses| addresses.into_iter().map(|address| address.to_string()).collect())
+                .unwrap_or_default()
+        })
+    }
+
     pub fn refs_local(&self) -> Vec<String> {
         self.rt.block_on(async { self.inner.refs_local().await.into_iter().map(|cid| cid.to_string()).collect() })
     }

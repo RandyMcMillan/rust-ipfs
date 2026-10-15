@@ -518,6 +518,8 @@ public protocol IpfsNodeProtocol : AnyObject {
     
     func externalAddresses()  -> [String]
     
+    func findPeer(peerId: String)  -> [String]
+    
     func identityJson()  -> String
     
     func listeningAddresses()  -> [String]
@@ -666,6 +668,14 @@ open func disconnect(peerId: String) -> String {
 open func externalAddresses() -> [String] {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
     uniffi_rustylib_fn_method_ipfsnode_external_addresses(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func findPeer(peerId: String) -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_find_peer(self.uniffiClonePointer(),
+        FfiConverterString.lower(peerId),$0
     )
 })
 }
@@ -967,6 +977,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_method_ipfsnode_external_addresses() != 19293) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_find_peer() != 58764) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_method_ipfsnode_identity_json() != 50928) {

@@ -3,6 +3,7 @@ SHELL := /bin/bash
 PROJECT := swiftyapp/swiftyapp.xcodeproj
 SCHEME := swiftyapp
 BUILD_SCRIPT := ./build.sh
+SWIFT_LIB_PATH := ./swiftyapp/Lib/swiftyrustlib
 RUST_CRATE_DIR := rustylib
 DERIVED_DATA ?= .build/xcode
 CONFIGURATION ?= Debug
@@ -66,6 +67,15 @@ install: catalyst
 	rm -rf "$(INSTALL_DIR)/$(APP_NAME)"
 	cp -R "$(CATALYST_APP_PATH)" "$(INSTALL_DIR)/$(APP_NAME)"
 
+check:
+	test -f "$(SWIFT_LIB_PATH)/artifacts/RustyCore.xcframework/Info.plist"
+	test -f "$(SWIFT_LIB_PATH)/artifacts/RustyCore.xcframework/ios-arm64/Headers/module.modulemap"
+	grep -q "startIpfsNode" "$(SWIFT_LIB_PATH)/Sources/RustyLib/RustyLib.swift"
+	@echo "XCFramework and generated Swift bindings look healthy."
+
 clean:
 	cd "$(RUST_CRATE_DIR)" && cargo clean
 	rm -rf "$(DERIVED_DATA)"
+
+clean-xcode:
+	rm -rf "$(HOME)/Library/Developer/Xcode/DerivedData/swiftyapp-"*

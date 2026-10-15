@@ -22,6 +22,10 @@ struct ContentView: View {
     @State private var refs = [String]()
     @State private var peerToFind = ""
     @State private var foundAddresses = [String]()
+    @State private var pinCid = ""
+    @State private var ipnsPath = ""
+    @State private var ipnsResult = ""
+    @State private var pins = [String]()
     @State private var pubsubTopic = "swifty-rust"
     @State private var pubsubMessage = "hello peers"
     @State private var pubsubIncoming = [String]()
@@ -562,6 +566,78 @@ struct ContentView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     ForEach(pubsubIncoming, id: \.self) { message in
                                         Text(message)
+                                            .font(.caption.monospaced())
+                                            .foregroundStyle(primaryText.opacity(0.72))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    glassCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Label("Pins and IPNS", systemImage: "pin")
+                                .font(.headline)
+                                .foregroundStyle(accentText)
+
+                            TextField("CID", text: $pinCid)
+                                .textFieldStyle(.roundedBorder)
+                            HStack {
+                                Button("Pin") {
+                                    guard let node else { return }
+                                    let cid = pinCid
+                                    Task { _ = await Task.detached { node.insertPin(cid: cid) }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || pinCid.isEmpty)
+
+                                Button("Unpin") {
+                                    guard let node else { return }
+                                    let cid = pinCid
+                                    Task { _ = await Task.detached { node.removePin(cid: cid) }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || pinCid.isEmpty)
+
+                                Button("List pins") {
+                                    guard let node else { return }
+                                    Task { pins = await Task.detached { node.listPins() }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil)
+                            }
+
+                            TextField("IPFS path", text: $ipnsPath)
+                                .textFieldStyle(.roundedBorder)
+                            HStack {
+                                Button("Publish IPNS") {
+                                    guard let node else { return }
+                                    let path = ipnsPath
+                                    Task { ipnsResult = await Task.detached { node.publishIpns(path: path) }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || ipnsPath.isEmpty)
+
+                                Button("Resolve IPNS") {
+                                    guard let node else { return }
+                                    let path = ipnsPath
+                                    Task { ipnsResult = await Task.detached { node.resolveIpns(path: path, recursive: true) }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || ipnsPath.isEmpty)
+                            }
+
+                            if !ipnsResult.isEmpty {
+                                Text(ipnsResult)
+                                    .font(.footnote.monospaced())
+                                    .foregroundStyle(primaryText.opacity(0.8))
+                                    .textSelection(.enabled)
+                            }
+
+                            if !pins.isEmpty {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    ForEach(pins, id: \.self) { pin in
+                                        Text(pin)
                                             .font(.caption.monospaced())
                                             .foregroundStyle(primaryText.opacity(0.72))
                                     }

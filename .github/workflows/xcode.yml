@@ -60,6 +60,10 @@ jobs:
         working-directory: xcode
         run: ./build.sh
 
+      - name: Verify generated artifacts
+        working-directory: xcode
+        run: make check
+
       - name: Resolve Swift package dependencies
         working-directory: xcode
         run: xcodebuild -resolvePackageDependencies -project swiftyapp/swiftyapp.xcodeproj -scheme swiftyapp

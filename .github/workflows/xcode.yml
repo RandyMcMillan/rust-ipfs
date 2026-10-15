@@ -56,6 +56,10 @@ jobs:
         working-directory: xcode
         run: make clean
 
+      - name: Run Rust tests
+        working-directory: xcode
+        run: make test
+
       - name: Build Rust library and XCFramework
         working-directory: xcode
         run: ./build.sh

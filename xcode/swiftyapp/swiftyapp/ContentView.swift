@@ -26,6 +26,11 @@ struct ContentView: View {
     @State private var catPath = ""
     @State private var catResult = ""
     @State private var isCatting = false
+    @State private var mfsPath = "/demo/hello.txt"
+    @State private var mfsData = "Hello MFS from Swift"
+    @State private var mfsResult = ""
+    @State private var mfsList = [String]()
+    @State private var mfsRoot = ""
 
     private var sum: Int {
         Int(rustAdd(a: UInt32(firstValue), b: UInt32(secondValue)))
@@ -337,6 +342,106 @@ struct ContentView: View {
                                     .foregroundStyle(primaryText.opacity(0.8))
                                     .textSelection(.enabled)
                                     .lineLimit(8)
+                            }
+                        }
+                    }
+
+                    glassCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Label("Mutable file system", systemImage: "folder")
+                                .font(.headline)
+                                .foregroundStyle(accentText)
+
+                            TextField("Path", text: $mfsPath)
+                                .textFieldStyle(.roundedBorder)
+                            TextField("Data", text: $mfsData)
+                                .textFieldStyle(.roundedBorder)
+
+                            HStack {
+                                Button("Mkdir") {
+                                    guard let node else { return }
+                                    let path = mfsPath
+                                    Task { mfsResult = await Task.detached { node.mfsMkdir(path: path, parents: true) }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || mfsPath.isEmpty)
+
+                                Button("Write") {
+                                    guard let node else { return }
+                                    let path = mfsPath
+                                    let data = Data(mfsData.utf8)
+                                    Task { mfsResult = await Task.detached { node.mfsWrite(path: path, data: data, parents: true) }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || mfsPath.isEmpty)
+
+                                Button("Read") {
+                                    guard let node else { return }
+                                    let path = mfsPath
+                                    Task {
+                                        do {
+                                            let data = try await Task.detached { try node.mfsRead(path: path) }.value
+                                            mfsResult = String(data: data, encoding: .utf8) ?? "binary: \(data.count) bytes"
+                                        } catch {
+                                            mfsResult = "Read failed: \(error.localizedDescription)"
+                                        }
+                                    }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || mfsPath.isEmpty)
+                            }
+
+                            HStack {
+                                Button("Ls") {
+                                    guard let node else { return }
+                                    let path = (mfsPath as NSString).deletingLastPathComponent
+                                    let dir = path.isEmpty ? "/" : path
+                                    Task { mfsList = await Task.detached { node.mfsLs(path: dir == "" ? "/" : dir) }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil)
+
+                                Button("Rm") {
+                                    guard let node else { return }
+                                    let path = mfsPath
+                                    Task { mfsResult = await Task.detached { node.mfsRm(path: path, recursive: true) }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || mfsPath.isEmpty)
+
+                                Button("Root") {
+                                    guard let node else { return }
+                                    Task { mfsRoot = await Task.detached { node.mfsRoot() }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil)
+                            }
+
+                            if !mfsResult.isEmpty {
+                                Text(mfsResult)
+                                    .font(.footnote.monospaced())
+                                    .foregroundStyle(primaryText.opacity(0.8))
+                                    .textSelection(.enabled)
+                            }
+
+                            if !mfsRoot.isEmpty {
+                                Text("MFS root: \(mfsRoot)")
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(primaryText.opacity(0.72))
+                                    .textSelection(.enabled)
+                            }
+
+                            if !mfsList.isEmpty {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Entries")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(primaryText.opacity(0.68))
+                                    ForEach(mfsList, id: \.self) { entry in
+                                        Text(entry)
+                                            .font(.caption.monospaced())
+                                            .foregroundStyle(primaryText.opacity(0.72))
+                                    }
+                                }
                             }
                         }
                     }

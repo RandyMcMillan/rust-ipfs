@@ -415,6 +415,30 @@ fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterBool : FfiConverter {
+    typealias FfiType = Int8
+    typealias SwiftType = Bool
+
+    public static func lift(_ value: Int8) throws -> Bool {
+        return value != 0
+    }
+
+    public static func lower(_ value: Bool) -> Int8 {
+        return value ? 1 : 0
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Bool {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: Bool, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
@@ -491,6 +515,18 @@ public protocol IpfsNodeProtocol : AnyObject {
     func identityJson()  -> String
     
     func listeningAddresses()  -> [String]
+    
+    func mfsLs(path: String)  -> [String]
+    
+    func mfsMkdir(path: String, parents: Bool)  -> String
+    
+    func mfsRead(path: String) throws  -> Data
+    
+    func mfsRm(path: String, recursive: Bool)  -> String
+    
+    func mfsRoot()  -> String
+    
+    func mfsWrite(path: String, data: Data, parents: Bool)  -> String
     
     func peerId()  -> String
     
@@ -609,6 +645,57 @@ open func identityJson() -> String {
 open func listeningAddresses() -> [String] {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
     uniffi_rustylib_fn_method_ipfsnode_listening_addresses(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func mfsLs(path: String) -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_mfs_ls(self.uniffiClonePointer(),
+        FfiConverterString.lower(path),$0
+    )
+})
+}
+    
+open func mfsMkdir(path: String, parents: Bool) -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_mfs_mkdir(self.uniffiClonePointer(),
+        FfiConverterString.lower(path),
+        FfiConverterBool.lower(parents),$0
+    )
+})
+}
+    
+open func mfsRead(path: String)throws  -> Data {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeIpfsError.lift) {
+    uniffi_rustylib_fn_method_ipfsnode_mfs_read(self.uniffiClonePointer(),
+        FfiConverterString.lower(path),$0
+    )
+})
+}
+    
+open func mfsRm(path: String, recursive: Bool) -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_mfs_rm(self.uniffiClonePointer(),
+        FfiConverterString.lower(path),
+        FfiConverterBool.lower(recursive),$0
+    )
+})
+}
+    
+open func mfsRoot() -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_mfs_root(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func mfsWrite(path: String, data: Data, parents: Bool) -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_mfs_write(self.uniffiClonePointer(),
+        FfiConverterString.lower(path),
+        FfiConverterData.lower(data),
+        FfiConverterBool.lower(parents),$0
     )
 })
 }
@@ -820,6 +907,24 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_method_ipfsnode_listening_addresses() != 6800) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_mfs_ls() != 50276) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_mfs_mkdir() != 30432) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_mfs_read() != 16723) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_mfs_rm() != 25187) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_mfs_root() != 35341) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_mfs_write() != 34820) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_method_ipfsnode_peer_id() != 37429) {

@@ -522,6 +522,12 @@ public protocol IpfsNodeProtocol : AnyObject {
     
     func identityJson()  -> String
     
+    func insertPin(cid: String)  -> String
+    
+    func isPinned(cid: String)  -> Bool
+    
+    func listPins()  -> [String]
+    
     func listeningAddresses()  -> [String]
     
     func mfsLs(path: String)  -> [String]
@@ -540,6 +546,8 @@ public protocol IpfsNodeProtocol : AnyObject {
     
     func peers()  -> [String]
     
+    func publishIpns(path: String)  -> String
+    
     func pubsubMessages(topic: String)  -> [String]
     
     func pubsubPeers(topic: String)  -> [String]
@@ -553,6 +561,10 @@ public protocol IpfsNodeProtocol : AnyObject {
     func refsLocal()  -> [String]
     
     func removeExternalAddress(address: String)  -> String
+    
+    func removePin(cid: String)  -> String
+    
+    func resolveIpns(path: String, recursive: Bool)  -> String
     
 }
 
@@ -697,6 +709,29 @@ open func identityJson() -> String {
 })
 }
     
+open func insertPin(cid: String) -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_insert_pin(self.uniffiClonePointer(),
+        FfiConverterString.lower(cid),$0
+    )
+})
+}
+    
+open func isPinned(cid: String) -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_is_pinned(self.uniffiClonePointer(),
+        FfiConverterString.lower(cid),$0
+    )
+})
+}
+    
+open func listPins() -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_list_pins(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 open func listeningAddresses() -> [String] {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
     uniffi_rustylib_fn_method_ipfsnode_listening_addresses(self.uniffiClonePointer(),$0
@@ -769,6 +804,14 @@ open func peers() -> [String] {
 })
 }
     
+open func publishIpns(path: String) -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_publish_ipns(self.uniffiClonePointer(),
+        FfiConverterString.lower(path),$0
+    )
+})
+}
+    
 open func pubsubMessages(topic: String) -> [String] {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
     uniffi_rustylib_fn_method_ipfsnode_pubsub_messages(self.uniffiClonePointer(),
@@ -821,6 +864,23 @@ open func removeExternalAddress(address: String) -> String {
     return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_rustylib_fn_method_ipfsnode_remove_external_address(self.uniffiClonePointer(),
         FfiConverterString.lower(address),$0
+    )
+})
+}
+    
+open func removePin(cid: String) -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_remove_pin(self.uniffiClonePointer(),
+        FfiConverterString.lower(cid),$0
+    )
+})
+}
+    
+open func resolveIpns(path: String, recursive: Bool) -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_resolve_ipns(self.uniffiClonePointer(),
+        FfiConverterString.lower(path),
+        FfiConverterBool.lower(recursive),$0
     )
 })
 }
@@ -1036,6 +1096,15 @@ private var initializationResult: InitializationResult = {
     if (uniffi_rustylib_checksum_method_ipfsnode_identity_json() != 50928) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_rustylib_checksum_method_ipfsnode_insert_pin() != 32688) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_is_pinned() != 60190) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_list_pins() != 32936) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_rustylib_checksum_method_ipfsnode_listening_addresses() != 6800) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -1063,6 +1132,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_rustylib_checksum_method_ipfsnode_peers() != 7613) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_rustylib_checksum_method_ipfsnode_publish_ipns() != 4824) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_rustylib_checksum_method_ipfsnode_pubsub_messages() != 63492) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -1082,6 +1154,12 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_method_ipfsnode_remove_external_address() != 46369) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_remove_pin() != 24560) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_resolve_ipns() != 18677) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_constructor_ipfsnode_new() != 29091) {

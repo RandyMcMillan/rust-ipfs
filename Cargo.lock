@@ -5376,6 +5376,7 @@ version = "0.1.0"
 dependencies = [
  "connexa",
  "futures",
+ "ipld-core",
  "rust-ipfs",
  "serde_json",
  "tokio",

@@ -343,6 +343,85 @@ impl IpfsNode {
         })
     }
 
+    pub fn is_pinned(&self, cid: String) -> bool {
+        use std::str::FromStr;
+        let parsed = match ipld_core::cid::Cid::from_str(&cid) {
+            Ok(cid) => cid,
+            Err(_) => return false,
+        };
+        self.rt.block_on(async { self.inner.is_pinned(&parsed).await.unwrap_or(false) })
+    }
+
+    pub fn list_pins(&self) -> Vec<String> {
+        use futures::StreamExt;
+        self.rt.block_on(async {
+            let mut stream = self.inner.list_pins(None).await;
+            let mut pins = Vec::new();
+            while let Some(item) = stream.next().await {
+                if let Ok((cid, mode)) = item {
+                    pins.push(format!("{} {:?}", cid, mode));
+                }
+            }
+            pins
+        })
+    }
+
+    pub fn insert_pin(&self, cid: String) -> String {
+        use std::str::FromStr;
+        let parsed = match ipld_core::cid::Cid::from_str(&cid) {
+            Ok(cid) => cid,
+            Err(err) => return format!("invalid cid: {err}"),
+        };
+        self.rt.block_on(async {
+            match self.inner.insert_pin(&parsed).await {
+                Ok(()) => "pinned".to_string(),
+                Err(err) => format!("pin failed: {err}"),
+            }
+        })
+    }
+
+    pub fn remove_pin(&self, cid: String) -> String {
+        use std::str::FromStr;
+        let parsed = match ipld_core::cid::Cid::from_str(&cid) {
+            Ok(cid) => cid,
+            Err(err) => return format!("invalid cid: {err}"),
+        };
+        self.rt.block_on(async {
+            match self.inner.remove_pin(&parsed).await {
+                Ok(()) => "unpinned".to_string(),
+                Err(err) => format!("unpin failed: {err}"),
+            }
+        })
+    }
+
+    pub fn publish_ipns(&self, path: String) -> String {
+        use std::str::FromStr;
+        let ipfs_path = match IpfsPath::from_str(&path) {
+            Ok(path) => path,
+            Err(err) => return format!("invalid path: {err}"),
+        };
+        self.rt.block_on(async {
+            match self.inner.publish_ipns(&ipfs_path).await {
+                Ok(resolved) => resolved.to_string(),
+                Err(err) => format!("publish failed: {err}"),
+            }
+        })
+    }
+
+    pub fn resolve_ipns(&self, path: String, recursive: bool) -> String {
+        use std::str::FromStr;
+        let ipfs_path = match IpfsPath::from_str(&path) {
+            Ok(path) => path,
+            Err(err) => return format!("invalid path: {err}"),
+        };
+        self.rt.block_on(async {
+            match self.inner.resolve_ipns(&ipfs_path, recursive).await {
+                Ok(resolved) => resolved.to_string(),
+                Err(err) => format!("resolve failed: {err}"),
+            }
+        })
+    }
+
     pub fn refs_local(&self) -> Vec<String> {
         self.rt.block_on(async { self.inner.refs_local().await.into_iter().map(|cid| cid.to_string()).collect() })
     }

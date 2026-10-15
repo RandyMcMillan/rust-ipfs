@@ -15,6 +15,7 @@ path = "uniffi-bindgen.rs"
 uniffi = { version = "0.28.0", features = [ "cli" ] }
 rust-ipfs = { path = "../..", default-features = false, features = ["tcp", "dns", "ed25519", "secp256k1", "ecdsa", "noise"] }
 tokio = { version = "1", features = ["rt-multi-thread"] }
+futures = "0.3"
 
 [build-dependencies]
 uniffi = { version = "0.28.0", features = [ "build" ] }

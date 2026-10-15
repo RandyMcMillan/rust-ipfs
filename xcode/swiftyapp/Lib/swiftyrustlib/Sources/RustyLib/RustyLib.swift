@@ -540,6 +540,16 @@ public protocol IpfsNodeProtocol : AnyObject {
     
     func peers()  -> [String]
     
+    func pubsubMessages(topic: String)  -> [String]
+    
+    func pubsubPeers(topic: String)  -> [String]
+    
+    func pubsubPublish(topic: String, data: Data)  -> String
+    
+    func pubsubSubscribe(topic: String)  -> String
+    
+    func pubsubUnsubscribe(topic: String)  -> String
+    
     func refsLocal()  -> [String]
     
     func removeExternalAddress(address: String)  -> String
@@ -755,6 +765,47 @@ open func peerId() -> String {
 open func peers() -> [String] {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
     uniffi_rustylib_fn_method_ipfsnode_peers(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func pubsubMessages(topic: String) -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_pubsub_messages(self.uniffiClonePointer(),
+        FfiConverterString.lower(topic),$0
+    )
+})
+}
+    
+open func pubsubPeers(topic: String) -> [String] {
+    return try!  FfiConverterSequenceString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_pubsub_peers(self.uniffiClonePointer(),
+        FfiConverterString.lower(topic),$0
+    )
+})
+}
+    
+open func pubsubPublish(topic: String, data: Data) -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_pubsub_publish(self.uniffiClonePointer(),
+        FfiConverterString.lower(topic),
+        FfiConverterData.lower(data),$0
+    )
+})
+}
+    
+open func pubsubSubscribe(topic: String) -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_pubsub_subscribe(self.uniffiClonePointer(),
+        FfiConverterString.lower(topic),$0
+    )
+})
+}
+    
+open func pubsubUnsubscribe(topic: String) -> String {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_rustylib_fn_method_ipfsnode_pubsub_unsubscribe(self.uniffiClonePointer(),
+        FfiConverterString.lower(topic),$0
     )
 })
 }
@@ -1010,6 +1061,21 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_method_ipfsnode_peers() != 7613) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_pubsub_messages() != 63492) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_pubsub_peers() != 13797) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_pubsub_publish() != 5202) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_pubsub_subscribe() != 1633) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_rustylib_checksum_method_ipfsnode_pubsub_unsubscribe() != 54856) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_rustylib_checksum_method_ipfsnode_refs_local() != 39765) {

@@ -22,6 +22,9 @@ struct ContentView: View {
     @State private var refs = [String]()
     @State private var peerToFind = ""
     @State private var foundAddresses = [String]()
+    @State private var pubsubTopic = "swifty-rust"
+    @State private var pubsubMessage = "hello peers"
+    @State private var pubsubIncoming = [String]()
     @State private var node: IpfsNode?
     @State private var addName = "hello.txt"
     @State private var addText = "Hello from Swift + Rust IPFS"
@@ -509,6 +512,56 @@ struct ContentView: View {
                                         .foregroundStyle(primaryText.opacity(0.68))
                                     ForEach(mfsList, id: \.self) { entry in
                                         Text(entry)
+                                            .font(.caption.monospaced())
+                                            .foregroundStyle(primaryText.opacity(0.72))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    glassCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Label("PubSub", systemImage: "bubble.left.and.bubble.right")
+                                .font(.headline)
+                                .foregroundStyle(accentText)
+
+                            TextField("Topic", text: $pubsubTopic)
+                                .textFieldStyle(.roundedBorder)
+                            TextField("Message", text: $pubsubMessage)
+                                .textFieldStyle(.roundedBorder)
+
+                            HStack {
+                                Button("Subscribe") {
+                                    guard let node else { return }
+                                    let topic = pubsubTopic
+                                    Task { _ = await Task.detached { node.pubsubSubscribe(topic: topic) }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || pubsubTopic.isEmpty)
+
+                                Button("Publish") {
+                                    guard let node else { return }
+                                    let topic = pubsubTopic
+                                    let data = Data(pubsubMessage.utf8)
+                                    Task { _ = await Task.detached { node.pubsubPublish(topic: topic, data: data) }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || pubsubTopic.isEmpty)
+
+                                Button("Messages") {
+                                    guard let node else { return }
+                                    let topic = pubsubTopic
+                                    Task { pubsubIncoming = await Task.detached { node.pubsubMessages(topic: topic) }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || pubsubTopic.isEmpty)
+                            }
+
+                            if !pubsubIncoming.isEmpty {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    ForEach(pubsubIncoming, id: \.self) { message in
+                                        Text(message)
                                             .font(.caption.monospaced())
                                             .foregroundStyle(primaryText.opacity(0.72))
                                     }

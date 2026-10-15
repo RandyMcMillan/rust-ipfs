@@ -32,6 +32,8 @@ pub fn rust_add(a: u32, b: u32) -> u32 {
 pub struct IpfsNode {
     inner: Ipfs,
     rt: tokio::runtime::Runtime,
+    pubsub_storage:
+        std::sync::Arc<std::sync::Mutex<std::collections::HashMap<String, std::collections::VecDeque<(String, Vec<u8>)>>>>,
 }
 
 #[uniffi::export]
@@ -49,7 +51,94 @@ impl IpfsNode {
                 .await
                 .expect("failed to start ipfs node")
         });
-        Arc::new(Self { inner: ipfs, rt })
+        Arc::new(Self {
+            inner: ipfs,
+            rt,
+            pubsub_storage: std::sync::Arc::new(std::sync::Mutex::new(
+                std::collections::HashMap::new(),
+            )),
+        })
+    }
+
+    pub fn pubsub_subscribe(&self, topic: String) -> String {
+        use futures::StreamExt;
+
+        self.pubsub_storage.lock().unwrap().entry(topic.clone()).or_default();
+        let storage = self.pubsub_storage.clone();
+        let node = self.inner.clone();
+        let topic_for_task = topic.clone();
+
+        self.rt.spawn(async move {
+            if let Ok(mut stream) = node.pubsub_listener(topic_for_task.clone()).await {
+                while let Some(event) = stream.next().await {
+                    if let connexa::prelude::GossipsubEvent::Message { message } = event {
+                        let from = message
+                            .source
+                            .map(|peer| peer.to_string())
+                            .unwrap_or_default();
+                        let mut guard = storage.lock().unwrap();
+                        guard
+                            .entry(topic_for_task.clone())
+                            .or_default()
+                            .push_back((from, message.data.to_vec()));
+                    }
+                }
+            }
+        });
+
+        self.rt.block_on(async {
+            match self.inner.pubsub_subscribe(topic).await {
+                Ok(()) => "subscribed".to_string(),
+                Err(err) => format!("subscribe failed: {err}"),
+            }
+        })
+    }
+
+    pub fn pubsub_unsubscribe(&self, topic: String) -> String {
+        self.rt.block_on(async {
+            match self.inner.pubsub_unsubscribe(topic).await {
+                Ok(()) => "unsubscribed".to_string(),
+                Err(err) => format!("unsubscribe failed: {err}"),
+            }
+        })
+    }
+
+    pub fn pubsub_publish(&self, topic: String, data: Vec<u8>) -> String {
+        self.rt.block_on(async {
+            match self.inner.pubsub_publish(topic, data).await {
+                Ok(()) => "published".to_string(),
+                Err(err) => format!("publish failed: {err}"),
+            }
+        })
+    }
+
+    pub fn pubsub_messages(&self, topic: String) -> Vec<String> {
+        let mut storage = self.pubsub_storage.lock().unwrap();
+        storage
+            .get_mut(&topic)
+            .map(|queue| {
+                queue
+                    .drain(..)
+                    .map(|(from, data)| {
+                        format!(
+                            "{}: {}",
+                            from,
+                            data.iter().map(|byte| format!("{byte:02x}")).collect::<String>()
+                        )
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    pub fn pubsub_peers(&self, topic: String) -> Vec<String> {
+        self.rt.block_on(async {
+            self.inner
+                .pubsub_peers(topic)
+                .await
+                .map(|peers| peers.into_iter().map(|peer| peer.to_string()).collect())
+                .unwrap_or_default()
+        })
     }
 
     pub fn peer_id(&self) -> String {

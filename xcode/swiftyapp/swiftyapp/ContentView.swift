@@ -18,6 +18,8 @@ struct ContentView: View {
     @State private var connectAddress = ""
     @State private var connectResult = ""
     @State private var bootstrapResult = ""
+    @State private var peers = [String]()
+    @State private var refs = [String]()
     @State private var node: IpfsNode?
     @State private var addName = "hello.txt"
     @State private var addText = "Hello from Swift + Rust IPFS"
@@ -278,6 +280,48 @@ struct ContentView: View {
                                     .font(.caption.monospaced())
                                     .foregroundStyle(primaryText.opacity(0.72))
                                     .textSelection(.enabled)
+                            }
+
+                            HStack {
+                                Button("Refresh peers") {
+                                    guard let node else { return }
+                                    Task { peers = await Task.detached { node.peers() }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil)
+
+                                Button("Refresh refs") {
+                                    guard let node else { return }
+                                    Task { refs = await Task.detached { node.refsLocal() }.value }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil)
+                            }
+
+                            if !peers.isEmpty {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Connected peers")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(primaryText.opacity(0.68))
+                                    ForEach(peers, id: \.self) { peer in
+                                        Text(peer)
+                                            .font(.caption.monospaced())
+                                            .foregroundStyle(primaryText.opacity(0.72))
+                                    }
+                                }
+                            }
+
+                            if !refs.isEmpty {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Local refs")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(primaryText.opacity(0.68))
+                                    ForEach(refs, id: \.self) { ref in
+                                        Text(ref)
+                                            .font(.caption.monospaced())
+                                            .foregroundStyle(primaryText.opacity(0.72))
+                                    }
+                                }
                             }
 
                             Divider()

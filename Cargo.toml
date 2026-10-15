@@ -176,7 +176,7 @@ tempfile = "3.17.1"
 debug = true
 
 [workspace]
-members = ["packages/*", "unixfs", "examples/*", "misc/*"]
+members = ["packages/*", "unixfs", "examples/*", "misc/*", "xcode/rustylib"]
 exclude = ["archived"]
 
 resolver = "2"

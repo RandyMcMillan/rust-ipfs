@@ -73,6 +73,9 @@ check:
 	grep -q "startIpfsNode" "$(SWIFT_LIB_PATH)/Sources/RustyLib/RustyLib.swift"
 	@echo "XCFramework and generated Swift bindings look healthy."
 
+test:
+	cd "$(RUST_CRATE_DIR)" && PATH="$$HOME/.cargo/bin:$$PATH" cargo test --lib --target aarch64-apple-darwin
+
 clean:
 	cd "$(RUST_CRATE_DIR)" && cargo clean
 	rm -rf "$(DERIVED_DATA)"

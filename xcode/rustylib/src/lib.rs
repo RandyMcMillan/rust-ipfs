@@ -61,6 +61,147 @@ impl IpfsNode {
         })
     }
 
+    pub fn listening_addresses(&self) -> Vec<String> {
+        self.rt.block_on(async {
+            self.inner
+                .listening_addresses()
+                .await
+                .map(|addresses| addresses.into_iter().map(|address| address.to_string()).collect())
+                .unwrap_or_default()
+        })
+    }
+
+    pub fn addrs(&self) -> Vec<String> {
+        self.rt.block_on(async {
+            self.inner
+                .addrs()
+                .await
+                .map(|peers| {
+                    peers
+                        .into_iter()
+                        .flat_map(|(_, addresses)| addresses)
+                        .map(|address| address.to_string())
+                        .collect()
+                })
+                .unwrap_or_default()
+        })
+    }
+
+    pub fn default_bootstrap(&self) -> String {
+        self.rt.block_on(async {
+            match self.inner.default_bootstrap().await {
+                Ok(addresses) => addresses.into_iter().map(|address| address.to_string()).collect::<Vec<_>>().join("\n"),
+                Err(err) => format!("failed to bootstrap: {err}"),
+            }
+        })
+    }
+
+    pub fn bootstraps(&self) -> Vec<String> {
+        self.rt.block_on(async {
+            self.inner
+                .get_bootstraps()
+                .await
+                .map(|addresses| addresses.into_iter().map(|address| address.to_string()).collect())
+                .unwrap_or_default()
+        })
+    }
+
+    pub fn connect(&self, address: String) -> String {
+        use std::str::FromStr;
+        let addr = match rust_ipfs::Multiaddr::from_str(&address) {
+            Ok(addr) => addr,
+            Err(err) => return format!("invalid multiaddr: {err}"),
+        };
+        self.rt.block_on(async {
+            match self.inner.connect(addr).await {
+                Ok(id) => format!("connected: {id}"),
+                Err(err) => format!("connect failed: {err}"),
+            }
+        })
+    }
+
+    pub fn mfs_mkdir(&self, path: String, parents: bool) -> String {
+        self.rt.block_on(async {
+            match self.inner.mfs().mkdir(&path, parents).await {
+                Ok(()) => "ok".to_string(),
+                Err(err) => format!("mkdir failed: {err}"),
+            }
+        })
+    }
+
+    pub fn mfs_write(&self, path: String, data: Vec<u8>, parents: bool) -> String {
+        self.rt.block_on(async {
+            match self.inner.mfs().write(&path, &data, parents).await {
+                Ok(()) => "ok".to_string(),
+                Err(err) => format!("write failed: {err}"),
+            }
+        })
+    }
+
+    pub fn mfs_read(&self, path: String) -> Result<Vec<u8>, IpfsError> {
+        self.rt.block_on(async {
+            self.inner
+                .mfs()
+                .read(&path)
+                .await
+                .map_err(|err| IpfsError::Message(format!("read failed: {err}")))
+        })
+    }
+
+    pub fn mfs_rm(&self, path: String, recursive: bool) -> String {
+        self.rt.block_on(async {
+            match self.inner.mfs().rm(&path, recursive).await {
+                Ok(()) => "ok".to_string(),
+                Err(err) => format!("rm failed: {err}"),
+            }
+        })
+    }
+
+    pub fn mfs_ls(&self, path: String) -> Vec<String> {
+        self.rt.block_on(async {
+            self.inner
+                .mfs()
+                .ls(&path)
+                .await
+                .map(|entries| {
+                    entries
+                        .into_iter()
+                        .map(|entry| match entry.kind {
+                            rust_ipfs::mfs::MfsKind::File { size } => format!("{} file {} {}", entry.name, entry.cid, size),
+                            rust_ipfs::mfs::MfsKind::Directory => format!("{} dir {}", entry.name, entry.cid),
+                            rust_ipfs::mfs::MfsKind::Symlink => format!("{} symlink {}", entry.name, entry.cid),
+                        })
+                        .collect()
+                })
+                .unwrap_or_default()
+        })
+    }
+
+    pub fn mfs_root(&self) -> String {
+        self.rt.block_on(async {
+            match self.inner.mfs().root().await {
+                Ok(Some(cid)) => cid.to_string(),
+                Ok(None) => "empty".to_string(),
+                Err(err) => format!("root failed: {err}"),
+            }
+        })
+    }
+
+    pub fn identity_json(&self) -> String {
+        self.rt.block_on(async {
+            match self.inner.identity(None).await {
+                Ok(peer) => format!(
+                    "peer_id: {}\nprotocol_version: {}\nagent_version: {}\nlisten_addrs: {}",
+                    peer.peer_id,
+                    peer.protocol_version,
+                    peer.agent_version,
+                    peer.listen_addrs.into_iter().map(|a| a.to_string()).collect::<Vec<_>>().join(", ")
+                ),
+                Err(err) => format!("failed to get identity: {err}"),
+            }
+        })
+    }
+
     pub fn add_bytes(&self, name: String, data: Vec<u8>) -> Result<String, IpfsError> {
         use futures::StreamExt;
 

@@ -13,6 +13,19 @@ struct ContentView: View {
     @State private var secondValue = 32
     @State private var peerId = ""
     @State private var isStartingNode = false
+    @State private var listeningAddresses = [String]()
+    @State private var identityResult = ""
+    @State private var connectAddress = ""
+    @State private var connectResult = ""
+    @State private var bootstrapResult = ""
+    @State private var node: IpfsNode?
+    @State private var addName = "hello.txt"
+    @State private var addText = "Hello from Swift + Rust IPFS"
+    @State private var addResult = ""
+    @State private var isAdding = false
+    @State private var catPath = ""
+    @State private var catResult = ""
+    @State private var isCatting = false
 
     private var sum: Int {
         Int(rustAdd(a: UInt32(firstValue), b: UInt32(secondValue)))
@@ -171,7 +184,7 @@ struct ContentView: View {
                     }
 
                     glassCard {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 14) {
                             Label("Real IPFS node", systemImage: "network")
                                 .font(.headline)
                                 .foregroundStyle(accentText)
@@ -180,20 +193,150 @@ struct ContentView: View {
                                 isStartingNode = true
                                 Task {
                                     defer { isStartingNode = false }
-                                    peerId = await Task.detached { startIpfsNode() }.value
+                                    let created = await Task.detached { IpfsNode() }.value
+                                    node = created
+                                    peerId = created.peerId()
+                                    listeningAddresses = created.listeningAddresses()
+                                    identityResult = created.identityJson()
                                 }
                             } label: {
-                                Label(isStartingNode ? "Starting..." : "Start IPFS node", systemImage: "play.fill")
+                                Label(isStartingNode ? "Starting..." : (node == nil ? "Start IPFS node" : "Restart IPFS node"), systemImage: "play.fill")
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(PrimaryButtonStyle())
                             .disabled(isStartingNode)
 
                             if !peerId.isEmpty {
-                                Text(peerId)
+                                Text("Peer ID: \(peerId)")
                                     .font(.footnote.monospaced())
                                     .foregroundStyle(primaryText.opacity(0.8))
                                     .textSelection(.enabled)
+                            }
+
+                            if !listeningAddresses.isEmpty {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Listening addresses")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(primaryText.opacity(0.68))
+                                    ForEach(listeningAddresses, id: \.self) { address in
+                                        Text(address)
+                                            .font(.caption.monospaced())
+                                            .foregroundStyle(primaryText.opacity(0.72))
+                                            .textSelection(.enabled)
+                                    }
+                                }
+                            }
+
+                            if !identityResult.isEmpty {
+                                Text(identityResult)
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(primaryText.opacity(0.72))
+                                    .textSelection(.enabled)
+                            }
+
+                            Button {
+                                guard let node else { return }
+                                Task {
+                                    bootstrapResult = await Task.detached { node.defaultBootstrap() }.value
+                                }
+                            } label: {
+                                Label("Default bootstrap", systemImage: "antenna.radiowaves.left.and.right")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(PrimaryButtonStyle())
+                            .disabled(node == nil)
+
+                            if !bootstrapResult.isEmpty {
+                                Text(bootstrapResult)
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(primaryText.opacity(0.72))
+                                    .textSelection(.enabled)
+                                    .lineLimit(6)
+                            }
+
+                            HStack {
+                                TextField("Multiaddr to connect", text: $connectAddress)
+                                    .textFieldStyle(.roundedBorder)
+                                Button("Connect") {
+                                    guard let node else { return }
+                                    let address = connectAddress
+                                    Task {
+                                        connectResult = await Task.detached { node.connect(address: address) }.value
+                                    }
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || connectAddress.isEmpty)
+                            }
+
+                            if !connectResult.isEmpty {
+                                Text(connectResult)
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(primaryText.opacity(0.72))
+                                    .textSelection(.enabled)
+                            }
+
+                            Divider()
+                                .overlay(accentFill.opacity(colorScheme == .dark ? 0.22 : 0.16))
+
+                            HStack {
+                                TextField("Name", text: $addName)
+                                    .textFieldStyle(.roundedBorder)
+                                TextField("Text", text: $addText)
+                                    .textFieldStyle(.roundedBorder)
+                            }
+                            Button {
+                                guard let node else { return }
+                                isAdding = true
+                                Task {
+                                    defer { isAdding = false }
+                                    do {
+                                        addResult = try await Task.detached { try node.addBytes(name: addName, data: Data(addText.utf8)) }.value
+                                    } catch {
+                                        addResult = "Add failed: \(error.localizedDescription)"
+                                    }
+                                }
+                            } label: {
+                                Label(isAdding ? "Adding..." : "Add bytes", systemImage: "plus.circle.fill")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(PrimaryButtonStyle())
+                            .disabled(node == nil || isAdding || addName.isEmpty)
+
+                            if !addResult.isEmpty {
+                                Text("Added: \(addResult)")
+                                    .font(.footnote.monospaced())
+                                    .foregroundStyle(primaryText.opacity(0.8))
+                                    .textSelection(.enabled)
+                            }
+
+                            HStack {
+                                TextField("IPFS path / CID", text: $catPath)
+                                    .textFieldStyle(.roundedBorder)
+                                Button {
+                                    guard let node else { return }
+                                    isCatting = true
+                                    Task {
+                                        defer { isCatting = false }
+                                        do {
+                                            let data = try await Task.detached { try node.cat(path: catPath) }.value
+                                            catResult = String(data: data, encoding: .utf8) ?? data.map { String(format: "%02x", $0) }.joined()
+                                        } catch {
+                                            catResult = "Cat failed: \(error.localizedDescription)"
+                                        }
+                                    }
+                                } label: {
+                                    Label(isCatting ? "Reading..." : "Cat", systemImage: "doc.text.magnifyingglass")
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .disabled(node == nil || isCatting || catPath.isEmpty)
+                            }
+
+                            if !catResult.isEmpty {
+                                Text("Result: \(catResult)")
+                                    .font(.footnote.monospaced())
+                                    .foregroundStyle(primaryText.opacity(0.8))
+                                    .textSelection(.enabled)
+                                    .lineLimit(8)
                             }
                         }
                     }
